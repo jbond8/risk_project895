@@ -69,9 +69,6 @@ def input_stepwise_elict(money_min = 0, money_max = 100, utilfn = uf.linear_util
     xp.sort()
     fp.sort()
 
-    print(xp)
-    print(fp)
-
     slope_list = [(fp[i+1] - fp[i]) / (xp[i+1] - xp[i]) for i in range(len(xp) - 1)]
     print(slope_list)
     intercept_list = [(slope_list[i]*(xp[0] - xp[i]) + fp[i]) for i in range(len(slope_list))]
@@ -159,3 +156,5 @@ def plot_utility(piecewise_list, increment = 0.01):
     
     plt.plot(x,y)
     plt.show()
+
+auto_stepwise_elict(uf.cara_utility)
