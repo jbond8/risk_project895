@@ -2,10 +2,11 @@ import helpers as hlpr
 import lottery as lot
 import utility_functions as uf
 import agent
+import holt_laury as hl
 import random
 import matplotlib.pyplot as plt
 
-def input_stepwise_elict(money_min = 0, money_max = 100, utilfn = uf.linear_utility):
+def input_stepwise_elict(money_min = 0, money_max = 100):
 
     xp = [money_min,money_max]
     fp = [money_min,money_max]
@@ -82,12 +83,10 @@ def input_stepwise_elict(money_min = 0, money_max = 100, utilfn = uf.linear_util
     print(f"{piecewise_list[0][0].get('intercept')}, {piecewise_list[0][0].get('slope')}x, if {piecewise_list[0][0].get('x_min')} ≤ x ≤ {piecewise_list[0][0].get('x_max')}")
     for subdomain in range(len(piecewise_list) - 1):
         print(f"{piecewise_list[subdomain+1][0].get('intercept')}, {piecewise_list[subdomain+1][0].get('slope')}x, if {piecewise_list[subdomain+1][0].get('x_min')} < x ≤ {piecewise_list[subdomain+1][0].get('x_max')}")
-    
-    plot_utility(piecewise_list)
 
     return piecewise_list
 
-def auto_stepwise_elict(money_min = 0, money_max = 100, utilfn = uf.linear_utility):
+def auto_stepwise_elict(money_min = 0, money_max = 100, utilfn = uf.linear_utility, events_n = 0):
     
     xp = [money_min,money_max]
     fp = [money_min,money_max]
@@ -117,8 +116,6 @@ def auto_stepwise_elict(money_min = 0, money_max = 100, utilfn = uf.linear_utili
     fp.append(ce_3)
     print(f"ev_1,ce_1 of lottery is {ev_3},{ce_3}")
 
-    
-    events_n = int(input("How many events would you like to run?: "))
     if events_n < 0:
         print()
         events_n = int(input("Negative numbers not accepted!\n How many events would you like to run?: "))
@@ -139,12 +136,10 @@ def auto_stepwise_elict(money_min = 0, money_max = 100, utilfn = uf.linear_utili
 
     xp.sort()
     fp.sort()
-    
-    uf.plot_utility(utilfn, utilfn)
 
     return xp, fp
 
-def plot_utility(piecewise_list, increment = 0.01):
+def plot_utility(piecewise_list):
 
     x = []
     y = []
@@ -157,4 +152,36 @@ def plot_utility(piecewise_list, increment = 0.01):
     plt.plot(x,y)
     plt.show()
 
-auto_stepwise_elict(uf.cara_utility)
+def get_lottery_choices(holt_laury_lotteries, piecewise):
+    lottery_choices = []
+    for lottery_pair in holt_laury_lotteries:
+        k = lottery_choice_step(lottery_pair, piecewise)[0]
+        lottery_choices.append(k)
+    return lottery_choices
+
+def lottery_pair_eucalc(lottery_pair, piecewise):
+    lottery_pair_eu = []
+    for lottery in lottery_pair:
+        eu = 0.0
+        for event in lottery:
+            out = event['out']
+            for piece in piecewise:
+                if out > piece[0].get('x_min') and out <= piece[0].get('x_max'):
+                    eu += (piece[0].get("slope") * event['out'] + piece[0].get("intercept")) * event['prob']
+        lottery_pair_eu.append(eu)
+    return lottery_pair_eu
+
+def lottery_choice_step(lottery_pair, piecewise):
+    """ Choose the lottery with the highest expected utility
+        from lottery_list using utility function u.
+        
+        returns:
+            lottery_index, eu  expected utility of the lottery
+    """
+    lottery_index = None
+    list_of_expected_u = []
+    lottery_pair_utility = lottery_pair_eucalc(lottery_pair,piecewise)
+    list_of_expected_u.append(lottery_pair_utility)
+    choice = max(lottery_pair_utility)
+    lottery_index = list_of_expected_u[0].index(choice)
+    return lottery_index, choice

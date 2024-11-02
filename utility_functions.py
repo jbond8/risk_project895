@@ -48,7 +48,7 @@ def plot_utility(utility, utility_name):
         where name is what you want to call it"""
     x = []
     y = []
-    for i in range(1, 1001):
+    for i in range(1, 101):
         x.append(i)
         y.append(utility(i))
     plt.plot(x,y)

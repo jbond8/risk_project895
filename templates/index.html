@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Utility Functions</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <h1>Utility Elicitation Tool</h1>
+
+    <h2>Auto Stepwise Elicitation</h2>
+    <form id="elicitation-form">
+        <label for="money_min">Minimum Money: </label>
+        <input type="number" id="money_min" name="money_min" value="0"><br><br>
+
+        <label for="money_max">Maximum Money: </label>
+        <input type="number" id="money_max" name="money_max" value="100"><br><br>
+
+        <label for="utility_function">Utility Function:</label>
+        <select id="utility_function" name="utility_function">
+            <option value="linear_utility">Linear Utility</option>
+            <option value="cara_utility">Constant Absolute Risk Aversion</option>
+            <option value="crra_utility">Constant Relative Risk Aversion</option>
+            <option value="exp_utility">Exponential Utility</option>
+            <option value="hara_utility">Hyperbolic Absolute Risk Aversion</option>
+        </select><br><br>
+
+        <label for="events_n">Number of Events: </label>
+        <input type="number" id="events_n" name="events_n" value="0"><br><br>
+
+        <button type="button" onclick="submitForm()">Run Elicitation</button>
+    </form>
+
+    <div id="results"></div>
+
+    <h2>Holt-Laury Piecewise Lotteries</h2>
+    <button onclick="fetchHoltLaury()">Fetch Holt-Laury Lotteries</button>
+    <div id="holt_laury_results"></div>
+
+    <script>
+        async function submitForm() {
+            const money_min = document.getElementById("money_min").value;
+            const money_max = document.getElementById("money_max").value;
+            const utilfn = document.getElementById("utility_function").value;
+            const events_n = document.getElementById("events_n").value;
+
+            const response = await fetch(`/autostep?money_min=${money_min}&money_max=${money_max}&utilfn=${utilfn}&events_n=${events_n}`);
+            const data = await response.json();
+            displayAutoStepwiseResults(data);
+        }
+
+        async function fetchHoltLaury() {
+            const response = await fetch("/holt_laury_piecewise");
+            const data = await response.json();
+            displayHoltLauryResults(data);
+        }
+
+        function displayAutoStepwiseResults(data) {
+            const container = document.getElementById("results");
+            container.innerHTML = ""; // clear previous results
+            container.innerHTML = `<strong>The Piecewise Functions (intercept, slope, conditions):</strong><br><br>`;
+
+
+            if (Array.isArray(data)) {
+                data.forEach((item, index) => {
+                    const itemDiv = document.createElement("div");
+                    itemDiv.innerHTML = `<strong>Piecewise ${index + 1}</strong>:<br>
+                     ${item[0].intercept} + ${item[0].slope}x, if ${item[0].x_min} ≤ x ≤ ${item[0].x_max}`;
+                    container.appendChild(itemDiv);
+        });
+
+            } else {
+                container.innerHTML = "Unexpected data format for Auto Stepwise Elicitation.";
+            }
+        }
+
+        function displayHoltLauryResults(data) {
+            const container = document.getElementById("holt_laury_results");
+            container.innerHTML = ""; // clear previous results
+
+            if (Array.isArray(data) && data.length === 2) {
+                const [holtLauryLotteries, choices] = data;
+
+                const resultsDiv = document.createElement("div");
+                resultsDiv.innerHTML = `<strong>Holt-Laury Lotteries and Choices:</strong><br><br>`;
+
+                holtLauryLotteries.forEach((lotteryPair, index) => {
+                    const choice = choices[index];
+                    const firstLottery = lotteryPair[0];
+                    const secondLottery = lotteryPair[1];
+
+                    const pairDiv = document.createElement("div");
+                    pairDiv.className = "lottery-pair";
+
+                    // Format first lottery (A)
+                    const firstLotteryDiv = document.createElement("div");
+                    const formattedFirstLottery = `[${firstLottery[0].out}](${firstLottery[0].prob}) : [${firstLottery[1].out}](${firstLottery[1].prob})`;
+                    if (choice === 0) {
+                        firstLotteryDiv.innerHTML = `${formattedFirstLottery} <strong>--A</strong>`;
+                        firstLotteryDiv.style.fontWeight = "bold";
+                    } else {
+                        firstLotteryDiv.innerHTML = `${formattedFirstLottery} --A`;
+                    }
+                    pairDiv.appendChild(firstLotteryDiv);
+
+                    // Format second lottery (B)
+                    const secondLotteryDiv = document.createElement("div");
+                    const formattedSecondLottery = `[${secondLottery[0].out}](${secondLottery[0].prob}) : [${secondLottery[1].out}](${secondLottery[1].prob})`;
+                    if (choice === 1) {
+                        secondLotteryDiv.innerHTML = `${formattedSecondLottery} <strong>--B</strong>`;
+                        secondLotteryDiv.style.fontWeight = "bold";
+                    } else {
+                        secondLotteryDiv.innerHTML = `${formattedSecondLottery} --B`;
+                    }
+                    pairDiv.appendChild(secondLotteryDiv);
+
+                    resultsDiv.appendChild(pairDiv);
+                    resultsDiv.appendChild(document.createElement("br"));
+                });
+
+                container.appendChild(resultsDiv);
+
+            } else {
+                container.innerHTML = "Unexpected data format for Holt-Laury Piecewise Lotteries.";
+            }
+        }
+    </script>
+</body>
+</html>

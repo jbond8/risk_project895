@@ -54,7 +54,6 @@ def certainty_equivalent(lottery, u, min_x, max_x, precision = .1):
         TODO: only tested on linear_utility, needs to be tested with other utility functions
     """
     eu = expected_utility(lottery, u)
-    print(f"expected utility = {eu:.4f}")
     # now do a bisection search for x such that u(x) = eu
     lower_bound = min_x
     upper_bound = max_x
