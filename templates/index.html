@@ -228,6 +228,34 @@
         </div>
     </div>
 
+    <h2>Utility Plot Comparison</h2>
+    <label for="utility_function_plot">Utility Function:</label>
+    <select id="utility_function_plot" name="utility_function_plot">
+        <option value="linear_utility">Linear Utility</option>
+        <option value="cara_utility">Constant Absolute Risk Aversion</option>
+        <option value="crra_utility">Constant Relative Risk Aversion</option>
+        <option value="exp_utility">Exponential Utility</option>
+        <option value="hara_utility">Hyperbolic Absolute Risk Aversion</option>
+    </select><br><br>
+        <button onclick="fetchUtilityComparison()">Show Utility Plot Comparison</button>
+        <br><br>
+        <img id="utilityComparisonPlot" style="display: none; border: 1px solid #ddd; padding: 10px; border-radius: 8px;">
+
+        <script>
+            async function fetchUtilityComparison() {
+                const utilfn = document.getElementById("utility_function_plot").value;
+                
+                // fetch the plot from the backend
+                const response = await fetch(`/display_auto?utility=${utilfn}&utility_name=${utilfn}`);
+                const data = await response.json();
+                
+                // display the image in the img element
+                const img = document.getElementById("utilityComparisonPlot");
+                img.src = `data:image/png;base64,${data.img_data}`;
+                img.style.display = "block";
+            }
+        </script>
+
     <h2>Holt-Laury Piecewise Lotteries</h2>
         <button onclick="fetchHoltLaury()">Fetch Holt-Laury Lotteries</button>
     <div id="holt_laury_results">

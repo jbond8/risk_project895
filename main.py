@@ -2,6 +2,8 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import risk
+from io import BytesIO
+import base64
 
 app = FastAPI()
 
@@ -189,3 +191,38 @@ def holt_laury_piecewise():
     holt_laury_lots = risk.hl.build_holt_laury_lotteries()
     choices = risk.get_lottery_choices(holt_laury_lots, util)
     return holt_laury_lots, choices
+
+@app.get("/display_auto")
+def display_auto(utility, utility_name):
+    
+    utility = utility_functions_map.get(utility)
+    
+    piecewise_list = get_session()
+    x_piecewise = []
+    y_piecewise = []
+
+
+    for piece in range(len(piecewise_list)):
+        for i in range(int(piecewise_list[piece][0].get('x_min') / 0.01), int(piecewise_list[piece][0].get('x_max') / 0.01)):
+                x_piecewise.append(i * 0.01)
+                y_piecewise.append(i * 0.01 * piecewise_list[piece][0].get('slope') + piecewise_list[piece][0].get('intercept'))
+    
+    risk.plt.plot(x_piecewise,y_piecewise, label = 'piecewise')
+
+    x_utility = []
+    y_utility = []
+
+    for i in range(0,101):
+        x_utility.append(i)
+        y_utility.append(utility(i))
+   
+    risk.plt.plot(x_utility,y_utility, label = utility_name)
+    risk.plt.legend()
+
+    buffer = BytesIO()
+    risk.plt.savefig(buffer, format="png")
+    buffer.seek(0)
+    risk.plt.close()
+    
+    img_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
+    return {"img_data": img_str}
