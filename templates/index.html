@@ -6,36 +6,231 @@
     <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-    <h1>Utility Elicitation Tool</h1>
+    <h1>Risk Preferences Elicitation Tool</h1>
 
-    <h2>Auto Stepwise Elicitation</h2>
-    <form id="elicitation-form">
-        <label for="money_min">Minimum Money: </label>
-        <input type="number" id="money_min" name="money_min" value="0"><br><br>
+    <h2>Select Elicitation Mode</h2>
+        <label>
+            <input type="radio" name="elicitationMode" value="input" onclick="toggleElicitationMode()" checked>
+            Input Stepwise Elicitation
+        </label>
+        <label>
+            <input type="radio" name="elicitationMode" value="auto" onclick="toggleElicitationMode()">
+            Auto Stepwise Elicitation
+        </label>
 
-        <label for="money_max">Maximum Money: </label>
-        <input type="number" id="money_max" name="money_max" value="100"><br><br>
+    <div id="inputElicitation" style="display: block;">
+        <h2>Input Stepwise Eliciation</h2>
 
-        <label for="utility_function">Utility Function:</label>
-        <select id="utility_function" name="utility_function">
-            <option value="linear_utility">Linear Utility</option>
-            <option value="cara_utility">Constant Absolute Risk Aversion</option>
-            <option value="crra_utility">Constant Relative Risk Aversion</option>
-            <option value="exp_utility">Exponential Utility</option>
-            <option value="hara_utility">Hyperbolic Absolute Risk Aversion</option>
-        </select><br><br>
+        <h3>Set Your Lottery Parameters</h3>
+            <label for="minMoney">Minimum money:</label>
+                <input type="number" id="minMoney" placeholder="enter minimum money" /><br>
+    
+            <label for="maxMoney">Maximum money:</label>
+                <input type="number" id="maxMoney" placeholder="enter maximum money" /><br>
 
-        <label for="events_n">Number of Events: </label>
-        <input type="number" id="events_n" name="events_n" value="0"><br><br>
+            <label for="numQuestions">How many additional lotteries?</label>
+                <input type="number" id="numQuestions" min="0" placeholder="enter a number" />
+    
+            <button onclick="startLotteryQuestions()">Start</button>
 
-        <button type="button" onclick="submitForm()">Run Elicitation</button>
-    </form>
+        <div id="questionContainer" style="margin-top: 20px;">
+            <!-- lottery and dynamic question inputs will appear here -->
+        </div>
 
-    <div id="results"></div>
+        <div id="resultsContainer" style="margin-top: 20px;">
+             <!-- results will be displayed here -->
+        </div>
+    </div>
+
+    <script>
+        let currentQuestion = 1;
+        let totalQuestions = 0;
+        let ce_1, ce_2, ce_3;
+        const answers = []; // to store additional answers
+
+        function startLotteryQuestions() {
+            const minMoney = parseFloat(document.getElementById('minMoney').value);
+            const maxMoney = parseFloat(document.getElementById('maxMoney').value);
+            totalQuestions = parseInt(document.getElementById('numQuestions').value);
+
+            if (isNaN(minMoney) || isNaN(maxMoney) || minMoney < 0 || maxMoney <= minMoney) {
+                alert('please enter valid minimum and maximum money values, with min >= 0 and max > min.');
+                return;
+            }
+
+            if (isNaN(totalQuestions) || totalQuestions < 0) {
+                alert('please enter a valid number of questions (0 or more).');
+                return;
+            }
+
+            showLotteryQuestion(1, minMoney, maxMoney);
+        }
+
+        function showLotteryQuestion(step, minMoney, maxMoney) {
+            const questionContainer = document.getElementById('questionContainer');
+            questionContainer.innerHTML = ''; // clear for new question
+
+            let questionText;
+            if (step === 1) {
+                questionText = `The lottery has a 50/50 probability that it will either pay out ${minMoney} or ${maxMoney}.`;
+            } else if (step === 2) {
+                questionText = `The lottery has a 50/50 probability that it will either pay out ${minMoney} or ${ce_1}.`;
+            } else if (step === 3) {
+                questionText = `The lottery has a 50/50 probability that it will either pay out ${ce_1} or ${maxMoney}.`;
+            }
+
+            const questionLabel = document.createElement('p');
+            questionLabel.innerText = questionText;
+            
+            const questionInput = document.createElement('input');
+            questionInput.type = 'number';
+            questionInput.id = 'lotteryAnswer';
+            questionInput.placeholder = 'Enter your answer';
+
+            const submitButton = document.createElement('button');
+            submitButton.innerText = 'Submit answer';
+            submitButton.onclick = () => submitLotteryAnswer(step, minMoney, maxMoney);
+
+            questionContainer.appendChild(questionLabel);
+            questionContainer.appendChild(questionInput);
+            questionContainer.appendChild(submitButton);
+        }
+
+        function submitLotteryAnswer(step, minMoney, maxMoney) {
+            const answerInput = document.getElementById('lotteryAnswer');
+            const answer = parseFloat(answerInput.value.trim());
+
+            if (isNaN(answer)) {
+                alert('please provide a valid answer.');
+                return;
+            }
+
+            if (step === 1) {
+                ce_1 = answer;
+                showLotteryQuestion(2, minMoney, maxMoney);
+            } else if (step === 2) {
+                ce_2 = answer;
+                showLotteryQuestion(3, minMoney, maxMoney);
+            } else if (step === 3) {
+                ce_3 = answer;
+
+                if (totalQuestions > 0) {
+                    startAdditionalQuestions(minMoney, maxMoney);
+                } else {
+                    sendDataToServer(answers, minMoney, maxMoney, totalQuestions, ce_1, ce_2, ce_3);
+                }
+            }
+        }
+
+        async function sendDataToServer(answers, minMoney, maxMoney, totalQuestions, ce_1, ce_2, ce_3) {
+            const response = await fetch(`/inputstep?events_ans=${answers}&ce_1=${ce_1}&ce_2=${ce_2}&ce_3=${ce_3}&money_min=${minMoney}&money_max=${maxMoney}`);
+            const result = await response.json();
+            displayResults(result);
+        }
+
+        function startAdditionalQuestions(minMoney, maxMoney) {
+            currentQuestion = 1; // reset for additional questions
+            showNextQuestion(minMoney, maxMoney); // start dynamic questions
+        }
+
+        async function showNextQuestion(minMoney, maxMoney) {
+            const questionContainer = document.getElementById('questionContainer');
+            questionContainer.innerHTML = ''; // clear for new question
+
+            const questionLabel = document.createElement('label');
+            currentlot = await fetch(`/input_events?money_min=${minMoney}&money_max=${maxMoney}`);
+            currentlot = await currentlot.json();
+            questionLabel.innerText = `the lottery has a 50/50 probability that it will either pay out ${currentlot[0]} or ${currentlot[1]}: `;
+
+            const questionInput = document.createElement('input');
+            questionInput.type = 'text';
+            questionInput.id = 'answerInput';
+            questionInput.placeholder = `enter answer for question ${currentQuestion}`;
+
+            const submitButton = document.createElement('button');
+            submitButton.innerText = 'submit answer';
+            submitButton.onclick = () => submitAnswer(currentlot);
+
+            questionContainer.appendChild(questionLabel);
+            questionContainer.appendChild(questionInput);
+            questionContainer.appendChild(submitButton);
+        }
+
+        function submitAnswer(currentlot) {
+            const answerInput = document.getElementById('answerInput');
+            const ranMin = currentlot[0];
+            const ranMax = currentlot[1];
+            const minMoney = parseFloat(document.getElementById('minMoney').value);
+            const maxMoney = parseFloat(document.getElementById('maxMoney').value);
+            const answer = [answerInput.value.trim(),ranMin, ranMax];
+
+            if (!answer) {
+                alert('please provide an answer.');
+                return;
+            }
+
+            answers.push(answer); // store answer
+
+            currentQuestion++;
+
+            if (currentQuestion <= totalQuestions) {
+                showNextQuestion(minMoney, maxMoney);
+            } else {
+                sendDataToServer(answers, minMoney, maxMoney, totalQuestions, ce_1, ce_2, ce_3); // all done
+            }
+        }
+
+        function displayResults(data) {
+            const container = document.getElementById("resultsContainer");
+            container.innerHTML = ""; // clear previous content
+
+            container.innerHTML = `<strong>The Piecewise Functions (intercept, slope, conditions):</strong><br><br>`;
+
+            if (Array.isArray(data)) {
+                data.forEach((item, index) => {
+                    const itemDiv = document.createElement("div");
+                    itemDiv.innerHTML = `<strong>Piecewise ${index + 1}</strong>:<br>
+                                        ${item[0].intercept} + ${item[0].slope}x, if ${item[0].x_min} ≤ x ≤ ${item[0].x_max}`;
+                    container.appendChild(itemDiv);
+                });
+            } else {
+                container.innerHTML = "Unexpected data format for Stepwise Elicitation.";
+            }
+        }
+    </script>
+
+    <div id="autoElicitation" style="display: none;">
+        <h2>Auto Stepwise Elicitation</h2>
+        <form id="elicitation-form">
+            <label for="money_min">Minimum Money: </label>
+            <input type="number" id="money_min" name="money_min" value="0"><br><br>
+
+            <label for="money_max">Maximum Money: </label>
+            <input type="number" id="money_max" name="money_max" value="100"><br><br>
+
+            <label for="utility_function">Utility Function:</label>
+            <select id="utility_function" name="utility_function">
+                <option value="linear_utility">Linear Utility</option>
+                <option value="cara_utility">Constant Absolute Risk Aversion</option>
+                <option value="crra_utility">Constant Relative Risk Aversion</option>
+                <option value="exp_utility">Exponential Utility</option>
+                <option value="hara_utility">Hyperbolic Absolute Risk Aversion</option>
+            </select><br><br>
+
+            <label for="events_n">Number of Events: </label>
+            <input type="number" id="events_n" name="events_n" value="0"><br><br>
+
+            <button type="button" onclick="submitForm()">Run Elicitation</button>
+        </form>
+
+        <div id="results">
+            <!-- results will be displayed here -->
+        </div>
+    </div>
 
     <h2>Holt-Laury Piecewise Lotteries</h2>
-    <button onclick="fetchHoltLaury()">Fetch Holt-Laury Lotteries</button>
-    <div id="holt_laury_results"></div>
+        <button onclick="fetchHoltLaury()">Fetch Holt-Laury Lotteries</button>
+    <div id="holt_laury_results">
 
     <script>
         async function submitForm() {
@@ -57,9 +252,8 @@
 
         function displayAutoStepwiseResults(data) {
             const container = document.getElementById("results");
-            container.innerHTML = ""; // clear previous results
+            container.innerHTML = "";
             container.innerHTML = `<strong>The Piecewise Functions (intercept, slope, conditions):</strong><br><br>`;
-
 
             if (Array.isArray(data)) {
                 data.forEach((item, index) => {
@@ -125,5 +319,22 @@
             }
         }
     </script>
+</div>
+<script>
+    function toggleElicitationMode() {
+        const inputElicitation = document.getElementById('inputElicitation');
+        const autoElicitation = document.getElementById('autoElicitation');
+        const selectedMode = document.querySelector('input[name="elicitationMode"]:checked').value;
+
+        if (selectedMode === 'input') {
+            inputElicitation.style.display = 'block';
+            autoElicitation.style.display = 'none';
+        } else {
+            inputElicitation.style.display = 'none';
+            autoElicitation.style.display = 'block';
+        }
+    }
+</script>
+
 </body>
 </html>

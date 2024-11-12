@@ -36,3 +36,5 @@ results = [
 ]
 
 risk.plot_utility(results)
+
+risk.uf.plot_utility(risk.uf.crra_utility, 'crra')

@@ -185,3 +185,4 @@ def lottery_choice_step(lottery_pair, piecewise):
     choice = max(lottery_pair_utility)
     lottery_index = list_of_expected_u[0].index(choice)
     return lottery_index, choice
+

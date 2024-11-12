@@ -1,5 +1,4 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import risk
@@ -27,9 +26,79 @@ utility_functions_map = {
 async def index(request:Request):
     return templates.TemplateResponse('index.html',context={'request':request,'id':id})
 
-@app.get('inputstep')
+@app.get('/inputstep')
+def input_stepwise_elict(events_ans, ce_1, ce_2, ce_3, money_min = 0, money_max = 100):
 
+    money_min = float(money_min)
+    money_max = float(money_max)
+    
+    if events_ans == '':
+        print('no additiional events')
+    else:
+        events_ans = [float(x) for x in events_ans.split(",")]
+        answers = []
+        for answer in range(0, len(events_ans), 3):
+            answers.append(events_ans[answer:answer+3])
 
+    ce_1 = float(ce_1)
+    ce_2 = float(ce_2)
+    ce_3 = float(ce_3)
+
+    xp = [money_min, money_max]
+    fp = [money_min, money_max]
+    lottery_ce1 = [{'out': money_min, 'prob': 0.5}, {'out': money_max, 'prob': 0.5}]
+
+    ev_1 = risk.agent.expected_value(lottery_ce1)
+    xp.append(ev_1)
+    fp.append(ce_1)
+
+    lottery_ce2 = [{'out': money_min, 'prob': 0.5}, {'out': ce_1, 'prob': 0.5}]
+    ev_2 = risk.agent.expected_value(lottery_ce2)
+    xp.append(ev_2)
+    fp.append(ce_2)
+
+    lottery_ce3 = [{'out': ce_1, 'prob': 0.5}, {'out': money_max, 'prob': 0.5}]
+    ev_3 = risk.agent.expected_value(lottery_ce3)
+    xp.append(ev_3)
+    fp.append(ce_3)
+
+    if events_ans == '':
+            print('nothing')
+    else:
+        for answer in range((len(answers))):
+            lottery_cen = [{'out': answers[answer][1], 'prob': 0.5}, {'out': answers[answer][2], 'prob': 0.5}]
+            ev_n = risk.agent.expected_value(lottery_cen)
+            if answers[answer][0] not in xp:
+                xp.append(answers[answer][0])
+                fp.append(ev_n)
+
+    xp.sort()
+    fp.sort()
+
+    print(xp)
+    print(fp)
+
+    slope_list = [(fp[i+1] - fp[i]) / (xp[i+1] - xp[i]) for i in range(len(xp) - 1)]
+    intercept_list = [(slope_list[i]*(xp[0] - xp[i]) + fp[i]) for i in range(len(slope_list))]
+
+    piecewise_list = [[{'slope': slope_list[x], 'intercept': intercept_list[x], 'x_min': xp[x], 'x_max': xp[x+1]}] for x in range(len(xp) - 1)]
+    
+    session_store.clear()
+    session_store.extend(piecewise_list)
+
+    return piecewise_list
+
+@app.get("/input_events")
+def input_events(money_min, money_max):
+    money_min = float(money_min)
+    money_max = float(money_max)
+
+    RanMin = round(risk.random.uniform(money_min,money_max),2)
+    RanMax = round(risk.random.uniform(money_min, money_max),2)
+    while RanMax < RanMin:
+        RanMax = round(risk.random.uniform(money_min, money_max),2)
+    else:
+        return RanMin, RanMax
 
 @app.get("/autostep")
 def auto_stepwise_elict(money_min = 0, money_max = 100, utilfn = "linear_utility", events_n = 0):
@@ -84,8 +153,6 @@ def auto_stepwise_elict(money_min = 0, money_max = 100, utilfn = "linear_utility
     eu_3 = risk.agent.expected_utility(lottery_ce3, utilfn)
     xp.append(ce_3)
     fp.append(eu_3)
-
-    n_loader = 0
 
     if int(events_n) < 0:
         print()
