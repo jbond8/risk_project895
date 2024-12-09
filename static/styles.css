@@ -1,4 +1,4 @@
-/* general styling */
+/* General Styling */
 body {
     font-family: Arial, sans-serif;
     background-color: #f5f5f5;
@@ -10,7 +10,7 @@ h1, h2 {
     color: #333;
 }
 
-/* container styling for results */
+/* Container Styling for Results */
 #holt_laury_results, #results {
     margin-top: 20px;
 }
@@ -19,7 +19,7 @@ strong {
     color: #333;
 }
 
-/* styling for lottery pairs */
+/* Styling for Lottery Pairs */
 .lottery-pair {
     border: 1px solid #ddd;
     background-color: #fff;
@@ -29,7 +29,7 @@ strong {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* styling for individual lottery divs */
+/* Styling for Individual Lottery Divs */
 .lottery-pair div {
     margin: 8px 0;
     padding: 5px;
@@ -37,7 +37,7 @@ strong {
     color: #555;
 }
 
-/* distinguish lottery choices */
+/* Coloring to Distinguish Lottery Choices */
 .lottery-pair div:first-child {
     color: #333; /* color for --A */
 }
@@ -46,14 +46,14 @@ strong {
     color: #333; /* color for --B */
 }
 
-/* emphasize selected choices */
+/* Emphasizes Selected Choices */
 .lottery-pair div[style*="font-weight: bold"] {
-    background-color: #e6f7ff; /* light blue background for selected choice */
+    background-color: #e6f7ff;
     padding: 10px;
     border-radius: 4px;
 }
 
-/* spacing for lottery events */
+/* Spacing for Lottery Events */
 .lottery-event {
     display: inline-block;
     padding: 2px 6px;
@@ -63,7 +63,7 @@ strong {
     font-size: 12px;
 }
 
-/* overall page styling */
+/* Overall Page Styling */
 h2 {
     border-bottom: 2px solid #007bff;
     padding-bottom: 5px;

@@ -2,8 +2,12 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import risk
+import numpy as np
 from io import BytesIO
 import base64
+import copy
+
+np.random.seed(4271)
 
 app = FastAPI()
 
@@ -12,8 +16,12 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 session_store = []
+# Serves as temporary session storage
 
 def get_session():
+    """
+    Retrieves temporary session storage.
+    """
     return session_store
 
 utility_functions_map = {
@@ -30,7 +38,24 @@ async def index(request:Request):
 
 @app.get('/inputstep')
 def input_stepwise_elict(events_ans, ce_1, ce_2, ce_3, money_min = 0, money_max = 100):
-
+    """
+    Runs an input stepwise elicitation algorithim to build piecewise linear utility functions for a given utility function.
+    Designed to communicate with index.html collecting user input to send to this function.
+        args:
+            events_ans, the number of additional lotteries to be comepleted.
+            ce_1, certainty equivalent for first lottery.
+            ce_2, certainty equivalent for second lottery.
+            ce_3, certainty equivalent for third lottery.
+            money_min, minimum amount of money offered in a lottery
+            money_max, maximum amount of money offered in a lottery
+        returns:
+            piecewise_list, a list of linear piecewise functions as dictionaries containing:
+                slope, slope of linear piecewise function
+                intercept, intercept of linear piecewise function
+                x_min, minimum x value of linear piecewise function
+                x_max, maximum x value of lienar piecewise function
+    """
+    print(f"event_ans:{events_ans}")
     money_min = float(money_min)
     money_max = float(money_max)
     
@@ -77,9 +102,17 @@ def input_stepwise_elict(events_ans, ce_1, ce_2, ce_3, money_min = 0, money_max 
     xp.sort()
     fp.sort()
 
-    print(xp)
-    print(fp)
+    checkxp = copy.deepcopy(xp)
+    checkfp = copy.deepcopy(fp)
 
+    xp.clear()
+    fp.clear()
+
+    for i in checkxp:
+        if i not in xp:
+            xp.append(i)
+            fp.append(checkfp[checkxp.index(i)])
+    
     slope_list = [(fp[i+1] - fp[i]) / (xp[i+1] - xp[i]) for i in range(len(xp) - 1)]
     intercept_list = [(slope_list[i]*(xp[0] - xp[i]) + fp[i]) for i in range(len(slope_list))]
 
@@ -92,15 +125,23 @@ def input_stepwise_elict(events_ans, ce_1, ce_2, ce_3, money_min = 0, money_max 
 
 @app.get("/input_events")
 def input_events(money_min, money_max):
+    """
+    Creates additional lotteries if applicable.
+    Designed to communicate with index.html collecting lottery creation from this function.
+        args:
+            money_min, minimum amount of money offered in a lottery
+            money_max, maximum amount of money offered in a lottery
+        returns:
+            RanMin, a random number
+            RanMax, a random number
+    """
     money_min = float(money_min)
     money_max = float(money_max)
 
-    RanMin = round(risk.random.uniform(money_min,money_max),2)
-    RanMax = round(risk.random.uniform(money_min, money_max),2)
-    while RanMax < RanMin:
-        RanMax = round(risk.random.uniform(money_min, money_max),2)
-    else:
-        return RanMin, RanMax
+    RanMin = round(np.random.uniform(low=money_min, high=money_max, size=(1))[0],2)
+    RanMax = round(np.random.uniform(low=RanMin, high=money_max, size=(1))[0], 2)
+    
+    return RanMin, RanMax
 
 @app.get("/autostep")
 def auto_stepwise_elict(money_min = 0, money_max = 100, utilfn = "linear_utility", events_n = 0):
@@ -187,6 +228,9 @@ def auto_stepwise_elict(money_min = 0, money_max = 100, utilfn = "linear_utility
 
 @app.get("/holt_laury_piecewise")
 def holt_laury_piecewise():
+    """
+    Checks what Holt-Laury lotteries a user's piecewise utility function would select.
+    """
     util = get_session()
     holt_laury_lots = risk.hl.build_holt_laury_lotteries()
     choices = risk.get_lottery_choices(holt_laury_lots, util)
@@ -194,13 +238,21 @@ def holt_laury_piecewise():
 
 @app.get("/display_auto")
 def display_auto(utility, utility_name):
-    
+    """
+    Takes a utility function and plots utility function against linear piecewise utility function.
+        args:
+            utility, utility function
+            utility_name, name of utility function
+        returns:
+            imd, a dictionary
+                img_data, key label for encoded image data
+                img_str, encoded image data
+    """
     utility = utility_functions_map.get(utility)
     
     piecewise_list = get_session()
     x_piecewise = []
     y_piecewise = []
-
 
     for piece in range(len(piecewise_list)):
         for i in range(int(piecewise_list[piece][0].get('x_min') / 0.01), int(piecewise_list[piece][0].get('x_max') / 0.01)):

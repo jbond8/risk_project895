@@ -34,11 +34,11 @@
             <button onclick="startLotteryQuestions()">Start</button>
 
         <div id="questionContainer" style="margin-top: 20px;">
-            <!-- lottery and dynamic question inputs will appear here -->
+            <!-- Lottery and Dynamic Question Inputs Appear Here -->
         </div>
 
         <div id="resultsContainer" style="margin-top: 20px;">
-             <!-- results will be displayed here -->
+             <!-- Results are Displayed Here -->
         </div>
     </div>
 
@@ -46,9 +46,10 @@
         let currentQuestion = 1;
         let totalQuestions = 0;
         let ce_1, ce_2, ce_3;
-        const answers = []; // to store additional answers
+        const answers = [];
 
         function startLotteryQuestions() {
+            //Asks users lottery questions
             const minMoney = parseFloat(document.getElementById('minMoney').value);
             const maxMoney = parseFloat(document.getElementById('maxMoney').value);
             totalQuestions = parseInt(document.getElementById('numQuestions').value);
@@ -56,11 +57,13 @@
             if (isNaN(minMoney) || isNaN(maxMoney) || minMoney < 0 || maxMoney <= minMoney) {
                 alert('please enter valid minimum and maximum money values, with min >= 0 and max > min.');
                 return;
+                // Checks if user selected minimum amounts of money and maximum amounts of money are ordered appropriately
             }
 
             if (isNaN(totalQuestions) || totalQuestions < 0) {
                 alert('please enter a valid number of questions (0 or more).');
                 return;
+                // Prevents user from selecting negative number of questions
             }
 
             showLotteryQuestion(1, minMoney, maxMoney);
@@ -68,7 +71,8 @@
 
         function showLotteryQuestion(step, minMoney, maxMoney) {
             const questionContainer = document.getElementById('questionContainer');
-            questionContainer.innerHTML = ''; // clear for new question
+            questionContainer.innerHTML = '';
+            // Displays lottery question on web app
 
             let questionText;
             if (step === 1) {
@@ -99,6 +103,7 @@
         function submitLotteryAnswer(step, minMoney, maxMoney) {
             const answerInput = document.getElementById('lotteryAnswer');
             const answer = parseFloat(answerInput.value.trim());
+            // Sends user's lottery answers to input_step function in main.py
 
             if (isNaN(answer)) {
                 alert('please provide a valid answer.');
@@ -126,16 +131,16 @@
             const response = await fetch(`/inputstep?events_ans=${answers}&ce_1=${ce_1}&ce_2=${ce_2}&ce_3=${ce_3}&money_min=${minMoney}&money_max=${maxMoney}`);
             const result = await response.json();
             displayResults(result);
-        }
+        } // FastAPI call to input_step in main.py
 
         function startAdditionalQuestions(minMoney, maxMoney) {
-            currentQuestion = 1; // reset for additional questions
-            showNextQuestion(minMoney, maxMoney); // start dynamic questions
-        }
+            currentQuestion = 1; 
+            showNextQuestion(minMoney, maxMoney); 
+        } // Asks user additional questions if applicable. Goes through input_step in main.py
 
         async function showNextQuestion(minMoney, maxMoney) {
             const questionContainer = document.getElementById('questionContainer');
-            questionContainer.innerHTML = ''; // clear for new question
+            questionContainer.innerHTML = '';
 
             const questionLabel = document.createElement('label');
             currentlot = await fetch(`/input_events?money_min=${minMoney}&money_max=${maxMoney}`);
@@ -157,6 +162,7 @@
         }
 
         function submitAnswer(currentlot) {
+            // Submits answers through FastAPI call to input_step in main.py
             const answerInput = document.getElementById('answerInput');
             const ranMin = currentlot[0];
             const ranMax = currentlot[1];
@@ -169,7 +175,7 @@
                 return;
             }
 
-            answers.push(answer); // store answer
+            answers.push(answer);
 
             currentQuestion++;
 
@@ -181,8 +187,9 @@
         }
 
         function displayResults(data) {
+            // Displays results of piecewise functions
             const container = document.getElementById("resultsContainer");
-            container.innerHTML = ""; // clear previous content
+            container.innerHTML = "";
 
             container.innerHTML = `<strong>The Piecewise Functions (intercept, slope, conditions):</strong><br><br>`;
 
@@ -224,7 +231,7 @@
         </form>
 
         <div id="results">
-            <!-- results will be displayed here -->
+            <!-- Results are Displayed Here -->
         </div>
     </div>
 
@@ -245,11 +252,11 @@
             async function fetchUtilityComparison() {
                 const utilfn = document.getElementById("utility_function_plot").value;
                 
-                // fetch the plot from the backend
+                // Fetches utility plot from display_auto through FastAPI in main.py
                 const response = await fetch(`/display_auto?utility=${utilfn}&utility_name=${utilfn}`);
                 const data = await response.json();
                 
-                // display the image in the img element
+                // Display the image from utility plot as img element
                 const img = document.getElementById("utilityComparisonPlot");
                 img.src = `data:image/png;base64,${data.img_data}`;
                 img.style.display = "block";
@@ -262,6 +269,7 @@
 
     <script>
         async function submitForm() {
+            // Sends user-input parameters to auto_stepwise_elict through FastAPI in main.py
             const money_min = document.getElementById("money_min").value;
             const money_max = document.getElementById("money_max").value;
             const utilfn = document.getElementById("utility_function").value;
@@ -273,12 +281,14 @@
         }
 
         async function fetchHoltLaury() {
+            // Fetches Holt-Laury results from holt_laury_piecewise through FastAPI in main.py
             const response = await fetch("/holt_laury_piecewise");
             const data = await response.json();
             displayHoltLauryResults(data);
         }
 
         function displayAutoStepwiseResults(data) {
+            // Displays results from Auto Stepwise Elicitation
             const container = document.getElementById("results");
             container.innerHTML = "";
             container.innerHTML = `<strong>The Piecewise Functions (intercept, slope, conditions):</strong><br><br>`;
@@ -297,6 +307,7 @@
         }
 
         function displayHoltLauryResults(data) {
+            // Displays results from fetching Holt-Laury results
             const container = document.getElementById("holt_laury_results");
             container.innerHTML = ""; // clear previous results
 
@@ -314,7 +325,7 @@
                     const pairDiv = document.createElement("div");
                     pairDiv.className = "lottery-pair";
 
-                    // Format first lottery (A)
+                    // Formatting for First Lottery (A)
                     const firstLotteryDiv = document.createElement("div");
                     const formattedFirstLottery = `[${firstLottery[0].out}](${firstLottery[0].prob}) : [${firstLottery[1].out}](${firstLottery[1].prob})`;
                     if (choice === 0) {
@@ -325,7 +336,7 @@
                     }
                     pairDiv.appendChild(firstLotteryDiv);
 
-                    // Format second lottery (B)
+                    // Formatting for Second Lottery (B)
                     const secondLotteryDiv = document.createElement("div");
                     const formattedSecondLottery = `[${secondLottery[0].out}](${secondLottery[0].prob}) : [${secondLottery[1].out}](${secondLottery[1].prob})`;
                     if (choice === 1) {
@@ -350,6 +361,7 @@
 </div>
 <script>
     function toggleElicitationMode() {
+        // Toggle for Input vs. Auto Stepwise Elicitation
         const inputElicitation = document.getElementById('inputElicitation');
         const autoElicitation = document.getElementById('autoElicitation');
         const selectedMode = document.querySelector('input[name="elicitationMode"]:checked').value;
@@ -363,6 +375,5 @@
         }
     }
 </script>
-
 </body>
 </html>
