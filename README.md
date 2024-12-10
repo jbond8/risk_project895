@@ -24,4 +24,4 @@ Remember, `ECON895_Project 1_PART 3_Notebook` will provide a brief walkthrough o
 
 ## Preview of FastAPI Web App
 
-<img src="./img/Screenshot 2024-12-09 215225.png" alt="alt text" width="400" />
+<img src="./img/Screenshot 2024-12-09 215225.png" alt="alt text" width="800" />
