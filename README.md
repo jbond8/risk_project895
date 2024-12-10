@@ -21,3 +21,7 @@ A very important part of the project is the web app. Launching it is easy. After
 You will then be prompted to go to a locally hosted address in your web browser (most likely http://127.0.0.1:8000).
 
 Remember, `ECON895_Project 1_PART 3_Notebook` will provide a brief walkthrough of the web app.
+
+## Preview of FastAPI Web App
+
+<img src="./img/Screenshot 2024-12-09 215225.png" alt="alt text" width="400" />
